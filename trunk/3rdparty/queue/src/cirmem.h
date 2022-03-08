@@ -1,15 +1,12 @@
 /*
  * wqueue
- * Copyright (c) 2022 rainwu
+ * Copyright (c) 2022 fairywh
  */
 
 #ifndef __EX_CIRQUEUE__H__
 #define __EX_CIRQUEUE__H__
 
 
-/*
-    
-*/
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,34 +27,13 @@ struct shm_cirmem_header
     
     volatile uint64_t m_curr_nr;
     
-    volatile uint64_t m_ReadPos; //申请的位置
+    volatile uint64_t m_ReadPos;
     volatile uint64_t m_ReadPos_r;
     
-    volatile uint64_t m_WritePos; //申请的位置
+    volatile uint64_t m_WritePos;
     volatile uint64_t m_WritePos_r;
 };
 #pragma pack()
-
-inline void PrintBuffer(const void *buffer, unsigned int size, int level = 8) {
-// level级别比开放级别高，才能打印
-    //if(Cumulus::Logs::GetLevel() < level)
-        //return;
-    
-    printf("size:   %d\ncontent:    \n", size);
-
-    for(unsigned int tmp = 0; tmp < size; tmp ++){
-    
-        if(*((char *)buffer + tmp) < 0){
-            char b = (*((char *)buffer + tmp) >> 4)&0x0f;
-            char c = *((char *)buffer + tmp)&0x0f;
-
-            printf("%x%x ", b,c);
-        }
-        else 
-            printf("%02x ", *((char *)buffer + tmp));
-    }
-    printf("end\n");
-}
 
 class cir_mem {
 public:
@@ -126,17 +102,15 @@ public:
         } else {
             if(Pos + 8 < m_info->m_max_nr) {
                 *(uint64_t *)(m_pData + Pos) = size;
-                memcpy(m_pData + Pos + 8, buffer, m_info->m_max_nr - Pos - 8);
-                memcpy(m_pData, buffer + m_info->m_max_nr - Pos - 8, NextPos);
+                memcpy(m_pData + Pos + 8, buffer, m_info->m_max_nr - Pos - 8);	// copy the first part of message
+                memcpy(m_pData, buffer + m_info->m_max_nr - Pos - 8, NextPos);	// copy the remain
             } else {
                 char temp_buffer[8] = {0};
                 *(uint64_t *)temp_buffer = size;
-
-                //PrintBuffer(temp_buffer, 8);
                 
-                memcpy(m_pData + Pos, temp_buffer, m_info->m_max_nr - Pos); // 拷贝length头部的几个字节
-                memcpy(m_pData, temp_buffer + m_info->m_max_nr - Pos, 8 - (m_info->m_max_nr - Pos)); // 拷贝length后面几个字节
-                memcpy(m_pData + 8 - (m_info->m_max_nr - Pos), buffer, size);  // 拷贝数据
+                memcpy(m_pData + Pos, temp_buffer, m_info->m_max_nr - Pos); // copy the first part of message header
+                memcpy(m_pData, temp_buffer + m_info->m_max_nr - Pos, 8 - (m_info->m_max_nr - Pos));
+                memcpy(m_pData + 8 - (m_info->m_max_nr - Pos), buffer, size);  // copy data
             }
             
         }
@@ -144,7 +118,7 @@ public:
         while(!__sync_bool_compare_and_swap(&m_info->m_WritePos_r, Pos, NextPos)) {
             sched_yield();
         }
-        __sync_add_and_fetch(&m_info->m_curr_nr, 1);    // 消息个数
+        __sync_add_and_fetch(&m_info->m_curr_nr, 1);    // message num
         
         return 0;
     }
@@ -166,7 +140,7 @@ public:
                 return -1;
             }
             if(Pos + 8 < m_info->m_max_nr) {
-                size = *(uint64_t *)(m_pData + Pos);  // 当前数据的长度
+                size = *(uint64_t *)(m_pData + Pos);  // the size of current block
             } else {
                 char temp_buffer[8] = {0};
                 memcpy(temp_buffer, m_pData + Pos, m_info->m_max_nr - Pos);
@@ -203,6 +177,7 @@ public:
         return m_info->m_curr_nr;
     }
 
+	
     void PrintMem(uint64_t pos, unsigned int size) {
         if(size > 128 * 1024) {
             size = 128 * 1024;
