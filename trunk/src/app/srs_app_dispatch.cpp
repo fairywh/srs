@@ -67,7 +67,7 @@ int SrsDispatch::InitShm(cir_mem *queue, int shm_key, int shm_size)
 int SrsDispatch::DispatchWork(SrsStWork &work)
 {
     work.push_time = srs_update_system_time();
-
+    // to do
     int ret = _log_queue->push((char *)&work, sizeof(SrsStWork));
     if(ret != 0) {
         srs_error("queue is full,ret=%d", ret);
