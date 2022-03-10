@@ -8,6 +8,7 @@ The changelog for SRS.
 
 ## SRS 5.0 Changelog
 
+* v5.0, 2022-03-09, Merge SRS 4.0 for bugfix. v5.0.25
 * v5.0, 2022-02-16, Merge [#2799](https://github.com/ossrs/srs/pull/2799): Forward: Support dynamic forwarding by backend api. (#2799). v5.0.24
 * v5.0, 2022-02-14, Merge [#2878](https://github.com/ossrs/srs/pull/2878): Support include directive for config file. (#2878). v5.0.23
 * v5.0, 2022-01-18, Eliminate unused *.as files for Adobe Flash. v5.0.22
@@ -34,6 +35,8 @@ The changelog for SRS.
 
 ## SRS 4.0 Changelog
 
+* v4.0, 2022-03-07, RTC: Identify the WebRTC publisher in param for hooks. v4.0.247
+* v4.0, 2022-03-07, SRT: Append vhost to stream, not app. v4.0.246
 * v4.0, 2022-02-15, Fix warnings for uuid. v4.0.245
 * v4.0, 2022-02-15, Merge [#2917](https://github.com/ossrs/srs/pull/2917): SRT: Close connection if RTMP failed. (#2917). v4.0.244
 * v4.0, 2022-02-15, Refine build script for SRT to avoid warnings. v4.0.243
