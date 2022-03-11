@@ -11,12 +11,8 @@
 #include <srs_core.hpp>
 
 #include <string>
-#include <sys/epoll.h>
-#include <pthread.h>
-#include <vector>
 #include <srs_kernel_cirmem.hpp>
 #include <srs_app_st.hpp>
-#include <map>
 
 class SrsConfig;
 using namespace std;
@@ -45,16 +41,15 @@ class SrsDispatch
     public:
         SrsDispatch(int processor_num);
         ~SrsDispatch();
-        int Init();
+        srs_error_t Init();
 
-        int DispatchWork(SrsStWork &work);
+        srs_error_t DispatchWork(SrsStWork &work);
 
-        int GetWork(SrsStWork &work);
+        srs_error_t GetWork(SrsStWork &work);
 
     private:
-        int InitShm(cir_mem *queue, int shm_key, int shm_size);
+        srs_error_t InitShm(cir_mem *queue, int shm_key, int shm_size);
         cir_mem *_log_queue;
-        std::vector<string> streams;
 };
 
 

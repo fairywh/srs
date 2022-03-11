@@ -58,7 +58,7 @@ public:
 
 		void *pData = NULL;
         uint64_t shm_size = mem_size + sizeof(shm_cirmem_header);
-        pData = malloc(shm_size);
+        pData = malloc(shm_size);   // or use mmap instead
         memset(pData, 0, shm_size);
 
         m_info = (shm_cirmem_header *)pData; 
@@ -68,9 +68,6 @@ public:
         return 0;
     }
 
-    int Create(int shm_key, int memory_size) {
-        return -21;
-    }
     /*
         ret:
         -1  full
@@ -177,24 +174,6 @@ public:
         return m_info->m_curr_nr;
     }
 
-	
-    void PrintMem(uint64_t pos, unsigned int size) {
-        if(size > 128 * 1024) {
-            size = 128 * 1024;
-        }
-
-        for(unsigned int tmp = 0; tmp < size; tmp ++) {
-            if(*((char *)m_pData + tmp) < 0)
-            {
-                char b = (*((char *)m_pData + tmp) >> 4)&0x0f;
-                char c = *((char *)m_pData + tmp)&0x0f;
-
-                printf("%x%x ", b,c);
-            } else {
-                printf("%02x ", *((char *)m_pData + tmp));
-            }
-        }
-    }
 private:
     cir_mem(const cir_mem&);
     const cir_mem& operator=(const cir_mem&);

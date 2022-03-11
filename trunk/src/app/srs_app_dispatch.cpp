@@ -9,8 +9,7 @@
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_app_config.hpp>
-#include <algorithm>
-#include <map>
+#include <srs_kernel_error.hpp>
 
 #define PARSER_SHARE_KEY 0x123450
 
@@ -27,62 +26,52 @@ SrsDispatch::~SrsDispatch()
     srs_freep(_log_queue);
 }
 
-int SrsDispatch::Init()
+srs_error_t SrsDispatch::Init()
 {
-    int ret = 0;
-    int key;
+    srs_error_t err = srs_success;
 
-    if((ret = InitShm(_log_queue, PARSER_SHARE_KEY, PARSER_QUEUE_MEM_SIZE)) != 0) {
-        srs_error("init parser shm failed ret=%d, key=0x%x, size=%d.", ret, PARSER_SHARE_KEY, PARSER_QUEUE_MEM_SIZE);
-        return ret;
+    if((err = InitShm(_log_queue, PARSER_SHARE_KEY, PARSER_QUEUE_MEM_SIZE)) != 0) {
+        return srs_error_wrap(err, "init shm failed, key=0x%x, size=%d",
+            PARSER_SHARE_KEY, PARSER_QUEUE_MEM_SIZE);
     }
 	
-    return ret;
+    return err;
 }
 
-int SrsDispatch::InitShm(cir_mem *queue, int shm_key, int shm_size)
+srs_error_t SrsDispatch::InitShm(cir_mem *queue, int shm_key, int shm_size)
 {
+    srs_error_t err = srs_success;
     if(queue == NULL) {
-        return -1;
+        return srs_error_new(ERROR_QUEUE_INIT, "queue is not created");
     }
     int ret = queue->Init(shm_key, shm_size);
     if(ret != 0) {
-        srs_error("init shm error,need create,ret=%d", ret);
-        ret = queue->Create(shm_key, shm_size);
-    }
-    
-    if(ret != 0) {
-        srs_error("create shm error, ret=%d", ret);
-        return -2;
+        return srs_error_new(ERROR_QUEUE_INIT, "init shm error,need create,ret=%d", ret);
     }
 
-    ret = queue->Init(shm_key, shm_size);
-    if(ret != 0) {
-        srs_error("init shm error,ret=%d", ret);
-        return -3;
-    }
-    return ret;
+    return err;
 }
 
-int SrsDispatch::DispatchWork(SrsStWork &work)
+srs_error_t SrsDispatch::DispatchWork(SrsStWork &work)
 {
+    srs_error_t err = srs_success;
     work.push_time = srs_update_system_time();
     // to do
     int ret = _log_queue->push((char *)&work, sizeof(SrsStWork));
     if(ret != 0) {
-        srs_error("queue is full,ret=%d", ret);
-        return ret;
+        return srs_error_new(ERROR_QUEUE_PUSH, "queue is full,ret=%d", ret);
     }
     unsigned int work_num = _log_queue->get_curr_nr();
     srs_info("push parse work type=%d, fd=%d success. %d in total",
         work.type, work.fd, work_num);
-    return ret;
+    return err;
 }
 
-int SrsDispatch::GetWork(SrsStWork &work) 
+srs_error_t SrsDispatch::GetWork(SrsStWork &work) 
 {
+    srs_error_t err = srs_success;
     if (_log_queue->get_curr_nr() == 0) {
-        return -1;
+        return srs_error_new(ERROR_QUEUE_POP, "queue is empty");
     }
     
     char result[1024] = {0};
@@ -95,7 +84,7 @@ int SrsDispatch::GetWork(SrsStWork &work)
         } else {
             srs_error("queue pop error, ret=%d", ret);
         }
-        return -2;
+        return srs_error_new(ERROR_QUEUE_POP, "queue pop error");
     }
     SrsStWork *new_work = (SrsStWork*)result;
     work.type = new_work->type;
@@ -105,6 +94,6 @@ int SrsDispatch::GetWork(SrsStWork &work)
 
     srs_trace("get parser work type=%d, fd=%d",
         work.type, work.fd);
-    return ret;
+    return err;
 }
 
