@@ -48,7 +48,7 @@ public:
     }
     
     int Init(int shm_key, uint64_t mem_size = 0) {
-		// max 1G
+        // max 1G
         if(m_pData) {
             return 0;
         }
@@ -56,7 +56,7 @@ public:
             return -1;
         }
 
-		void *pData = NULL;
+        void *pData = NULL;
         uint64_t shm_size = mem_size + sizeof(shm_cirmem_header);
         pData = malloc(shm_size);   // or use mmap instead
         memset(pData, 0, shm_size);
@@ -99,8 +99,8 @@ public:
         } else {
             if(Pos + 8 < m_info->m_max_nr) {
                 *(uint64_t *)(m_pData + Pos) = size;
-                memcpy(m_pData + Pos + 8, buffer, m_info->m_max_nr - Pos - 8);	// copy the first part of message
-                memcpy(m_pData, buffer + m_info->m_max_nr - Pos - 8, NextPos);	// copy the remain
+                memcpy(m_pData + Pos + 8, buffer, m_info->m_max_nr - Pos - 8);  // copy the first part of message
+                memcpy(m_pData, buffer + m_info->m_max_nr - Pos - 8, NextPos);  // copy the remain
             } else {
                 char temp_buffer[8] = {0};
                 *(uint64_t *)temp_buffer = size;
@@ -167,7 +167,7 @@ public:
         return 0;
     }
 
-	unsigned get_curr_nr() const {
+    unsigned get_curr_nr() const {
         if(!m_info || !m_pData) {// not initialize
             return 0;
         }
@@ -178,7 +178,7 @@ private:
     cir_mem(const cir_mem&);
     const cir_mem& operator=(const cir_mem&);
 
-	shm_cirmem_header *m_info;
+    shm_cirmem_header *m_info;
 
     char* m_pData;
 
@@ -186,7 +186,7 @@ private:
         return (m_info->m_ReadPos_r + m_info->m_max_nr - m_info->m_WritePos - 1) % m_info->m_max_nr;
     }
 
-	uint64_t GetReadableSize() {
+    uint64_t GetReadableSize() {
         return (m_info->m_WritePos_r + m_info->m_max_nr - m_info->m_ReadPos) % m_info->m_max_nr;
     }
 };
