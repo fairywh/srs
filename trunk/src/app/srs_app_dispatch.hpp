@@ -21,7 +21,7 @@ using namespace std;
 
 #pragma pack(1)
 
-enum WorkType
+enum SrsWrkType
 {
     WORK_LOG = 1
     // to do
@@ -30,32 +30,31 @@ enum WorkType
 // example
 struct SrsStWork
 {// to do
-    WorkType type;
+    SrsWrkType type;
     void* info;
-    int fd;
     uint64_t push_time;
 };
 
 class SrsDispatch
 {
     public:
-        SrsDispatch(int processor_num);
+        SrsDispatch();
         ~SrsDispatch();
-        srs_error_t Init();
+        srs_error_t init();
 
-        srs_error_t DispatchWork(SrsStWork &work);
+        srs_error_t dispatch_work(SrsStWork &work);
 
-        srs_error_t GetWork(SrsStWork &work);
+        srs_error_t get_work(SrsStWork &work);
 
     private:
-        srs_error_t InitShm(cir_mem *queue, int shm_key, int shm_size);
-        cir_mem *_log_queue;
+        srs_error_t init_shm(SrsCirMem *queue, int shm_key, int shm_size);
+        SrsCirMem *log_queue;
+        // to do, for other queues
 };
 
 
 #pragma pack()
 
-extern SrsDispatch * _srs_dispatch;
 #endif
 
 
