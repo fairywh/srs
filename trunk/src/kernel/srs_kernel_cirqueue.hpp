@@ -4,10 +4,10 @@
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
 
-#ifndef __EX_CIRQUEUE__H__
-#define __EX_CIRQUEUE__H__
+#ifndef SRS_KERNEL_CIRQUEUE_HPP
+#define SRS_KERNEL_CIRQUEUE_HPP
 
-
+#include <srs_core.hpp>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,9 +18,8 @@
 #include <fcntl.h>
 #include <time.h>
 #include <stdint.h>
-#include "pthread.h"
-#define MAX_BUFFER_SIZE     1 * 1024 * 1024 * 1024
-#define USE_LOCAL_MEMORY    1
+#define SRS_CONST_MAX_BUFFER_SIZE     1 * 1024 * 1024 * 1024
+
 #pragma pack(1)
 struct SrsCirmemHeader
 {
@@ -36,42 +35,39 @@ struct SrsCirmemHeader
 };
 #pragma pack()
 
-class SrsCirMem {
+class SrsCircleQueue {
 public:
-    SrsCirMem();
+    SrsCircleQueue();
 
-    ~SrsCirMem();
+    ~SrsCircleQueue();
     
-    int init(int shm_key, uint64_t mem_size = 0);
+    srs_error_t init(int shm_key, uint64_t mem_size = 0);
 
     /*
-        ret:
-        -1  full
-        0   ok
-        
+        push the message to the queue
     */
-    int push(char *buffer, uint64_t size);
-    /*
-        ret:
-        -1 no data
-        0   ok
-    */
-    int pop(char * buffer, uint64_t &size);
+    srs_error_t push(void *buffer, uint64_t size);
 
-    unsigned get_curr_nr() const {
-        if(!info || !data) {// not initialize
+    /*
+        get the message from the queue
+        Error if empty, please use get_curr_size() to check before calling pop.
+    */
+    srs_error_t pop(void * buffer, uint64_t &size);
+
+    unsigned get_curr_size() const {
+        if (!info || !data) {
             return 0;
         }
         return info->curr_nr;
     }
 
 private:
-    SrsCirMem(const SrsCirMem&);
-    const SrsCirMem& operator=(const SrsCirMem&);
+    SrsCircleQueue(const SrsCircleQueue&);
+    const SrsCircleQueue& operator=(const SrsCircleQueue&);
 
     SrsCirmemHeader *info;
 
-    char* data;
+    void* data;
 
     uint64_t get_writable_size() {
         return (info->read_pos_r + info->max_nr - info->write_pos - 1) % info->max_nr;
@@ -81,6 +77,5 @@ private:
         return (info->write_pos_r + info->max_nr - info->read_pos) % info->max_nr;
     }
 };
-
-
 #endif
+
