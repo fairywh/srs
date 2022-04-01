@@ -17,7 +17,7 @@ SrsCircleQueue::SrsCircleQueue() : info(NULL), data(NULL)
 SrsCircleQueue::~SrsCircleQueue()
 {
     if (data) {
-        free(data - sizeof(SrsCirmemHeader));
+        free((char*)data - sizeof(SrsCirmemHeader));
     }
 }
 
@@ -37,7 +37,7 @@ srs_error_t SrsCircleQueue::init(int shm_key, uint64_t mem_size)
     memset(data, 0, shm_size);
 
     info = (SrsCirmemHeader *)data; 
-    data += sizeof(SrsCirmemHeader);
+    data = (char*)data + sizeof(SrsCirmemHeader);
     info->max_nr = mem_size;
 
     return err;
@@ -64,20 +64,20 @@ srs_error_t SrsCircleQueue::push(void *buffer, uint64_t size)
     } while (!__sync_bool_compare_and_swap(&info->write_pos, current_pos, next_pos));
 
     if (next_pos > current_pos) {
-        *(uint64_t *)(data + current_pos) = size;
-        memcpy(data + current_pos + 8, buffer, size);
+        *(uint64_t *)((char*)data + current_pos) = size;
+        memcpy((char*)data + current_pos + 8, buffer, size);
     } else {
         if (current_pos + 8 < info->max_nr) {
-            *(uint64_t *)(data + current_pos) = size;
-            memcpy(data + current_pos + 8, buffer, info->max_nr - current_pos - 8);  // copy the first part of message
-            memcpy(data, buffer + info->max_nr - current_pos - 8, next_pos);  // copy the remain
+            *(uint64_t *)((char*)data + current_pos) = size;
+            memcpy((char*)data + current_pos + 8, buffer, info->max_nr - current_pos - 8);  // copy the first part of message
+            memcpy((char*)data, (char*)buffer + info->max_nr - current_pos - 8, next_pos);  // copy the remain
         } else {
             char temp_buffer[8] = {0};
             *(uint64_t *)temp_buffer = size;
             
-            memcpy(data + current_pos, temp_buffer, info->max_nr - current_pos); // copy the first part of message header
-            memcpy(data, temp_buffer + info->max_nr - current_pos, 8 - (info->max_nr - current_pos));
-            memcpy(data + 8 - (info->max_nr - current_pos), buffer, size);  // copy data
+            memcpy((char*)data + current_pos, temp_buffer, info->max_nr - current_pos); // copy the first part of message header
+            memcpy((char*)data, temp_buffer + info->max_nr - current_pos, 8 - (info->max_nr - current_pos));
+            memcpy((char*)data + 8 - (info->max_nr - current_pos), buffer, size);  // copy data
         }
     }
 
@@ -105,10 +105,10 @@ srs_error_t SrsCircleQueue::pop(void* buffer, uint64_t& size)
         }
 
         if (current_pos + 8 < info->max_nr) {
-            size = *(uint64_t *)(data + current_pos);  // the size of current block
+            size = *(uint64_t *)((char*)data + current_pos);  // the size of current block
         } else {
             char temp_buffer[8] = {0};
-            memcpy(temp_buffer, data + current_pos, info->max_nr - current_pos);
+            memcpy(temp_buffer, (char*)data + current_pos, info->max_nr - current_pos);
             memcpy(temp_buffer + info->max_nr - current_pos, data, 8 - (info->max_nr - current_pos));
             size = *(uint64_t *)temp_buffer;
         }
@@ -117,13 +117,13 @@ srs_error_t SrsCircleQueue::pop(void* buffer, uint64_t& size)
     } while (!__sync_bool_compare_and_swap(&info->read_pos, current_pos, next_pos));
     
     if (next_pos > current_pos) {
-        memcpy(buffer, data + current_pos + 8, size);
+        memcpy(buffer, (char*)data + current_pos + 8, size);
     } else {
         if (current_pos + 8 < info->max_nr) {
-            memcpy(buffer, data + current_pos + 8, info->max_nr - current_pos - 8);
-            memcpy(buffer + info->max_nr - current_pos - 8, data, next_pos);
+            memcpy(buffer, (char*)data + current_pos + 8, info->max_nr - current_pos - 8);
+            memcpy((char*)buffer + info->max_nr - current_pos - 8, data, next_pos);
         } else {
-           memcpy(buffer, data + 8 - (info->max_nr - current_pos), size);
+           memcpy(buffer, (char*)data + 8 - (info->max_nr - current_pos), size);
         }
         
     }
