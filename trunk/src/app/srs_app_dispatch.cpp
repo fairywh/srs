@@ -65,7 +65,7 @@ srs_error_t SrsDispatch::dispatch_log(SrsStWork& work)
         return srs_error_wrap(err, "queue push failed");
     }
 
-    unsigned int work_num = log_queue_->get_curr_size(); (void)work_num;
+    unsigned int work_num = log_queue_->size(); (void)work_num;
     srs_info("push parse work type=%d, fd=%d success. %d in total", work.type, work.fd, work_num);
 
     return err;
@@ -75,7 +75,7 @@ srs_error_t SrsDispatch::fetch_log(SrsStWork& work)
 {
     srs_error_t err = srs_success;
 
-    if (log_queue_->get_curr_size() == 0) {
+    if (log_queue_->size() == 0) {
         return srs_error_new(ERROR_QUEUE_POP, "queue is empty");
     }
     
@@ -96,6 +96,6 @@ srs_error_t SrsDispatch::fetch_log(SrsStWork& work)
 
 bool SrsDispatch::empty()
 {
-    return log_queue_->get_curr_size() == 0;
+    return log_queue_->size() == 0;
 }
 
