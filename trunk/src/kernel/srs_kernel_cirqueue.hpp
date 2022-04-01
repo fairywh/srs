@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <stdint.h>
+
 #define SRS_CONST_MAX_BUFFER_SIZE     1 * 1024 * 1024 * 1024
 
 #pragma pack(1)
@@ -35,44 +36,33 @@ struct SrsCirmemHeader
 };
 #pragma pack()
 
-class SrsCircleQueue {
+class SrsCircleQueue
+{
 public:
     SrsCircleQueue();
-
     ~SrsCircleQueue();
-    
+public:
     srs_error_t init(int shm_key, uint64_t mem_size = 0);
-
-    /*
-        push the message to the queue
-    */
-    srs_error_t push(void *buffer, uint64_t size);
-
-    /*
-        get the message from the queue
-        Error if empty, please use get_curr_size() to check before calling pop.
-    */
-    srs_error_t pop(void * buffer, uint64_t &size);
-
-    unsigned get_curr_size() const {
+    srs_error_t push(void* buffer, uint64_t size);
+    // Get the message from the queue
+    // Error if empty. Please use size() to check before pop().
+    srs_error_t pop(void* buffer, uint64_t &size);
+    unsigned size() const {
         if (!info || !data) {
             return 0;
         }
         return info->curr_nr;
     }
-
 private:
     SrsCircleQueue(const SrsCircleQueue&);
     const SrsCircleQueue& operator=(const SrsCircleQueue&);
-
+private:
     SrsCirmemHeader *info;
-
     void* data;
-
+private:
     uint64_t get_writable_size() {
         return (info->read_pos_r + info->max_nr - info->write_pos - 1) % info->max_nr;
     }
-
     uint64_t get_readable_size() {
         return (info->write_pos_r + info->max_nr - info->read_pos) % info->max_nr;
     }

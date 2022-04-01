@@ -12,7 +12,6 @@ using namespace std;
 
 SrsCircleQueue::SrsCircleQueue() : info(NULL), data(NULL)
 {
-    
 }
 
 SrsCircleQueue::~SrsCircleQueue()
@@ -25,12 +24,12 @@ SrsCircleQueue::~SrsCircleQueue()
 srs_error_t SrsCircleQueue::init(int shm_key, uint64_t mem_size)
 {
     srs_error_t err = srs_success;
-    // max 1G
+
     if (data) {
         return err;
     }
     if (mem_size > SRS_CONST_MAX_BUFFER_SIZE) {
-        return srs_error_new(ERROR_QUEUE_INIT, "size is too large");
+        return srs_error_new(ERROR_QUEUE_INIT, "size=%" PRIu64 " is too large", mem_size);
     }
 
     uint64_t shm_size = mem_size + sizeof(SrsCirmemHeader);
@@ -47,7 +46,8 @@ srs_error_t SrsCircleQueue::init(int shm_key, uint64_t mem_size)
 srs_error_t SrsCircleQueue::push(void *buffer, uint64_t size)
 {
     srs_error_t err = srs_success;
-    if ((!info) || (!data)) {// not initialize
+
+    if (!info || !data) {
         return srs_error_new(ERROR_QUEUE_PUSH, "queue init failed");
     }
     
@@ -67,7 +67,7 @@ srs_error_t SrsCircleQueue::push(void *buffer, uint64_t size)
         *(uint64_t *)(data + current_pos) = size;
         memcpy(data + current_pos + 8, buffer, size);
     } else {
-        if(current_pos + 8 < info->max_nr) {
+        if (current_pos + 8 < info->max_nr) {
             *(uint64_t *)(data + current_pos) = size;
             memcpy(data + current_pos + 8, buffer, info->max_nr - current_pos - 8);  // copy the first part of message
             memcpy(data, buffer + info->max_nr - current_pos - 8, next_pos);  // copy the remain
@@ -79,7 +79,6 @@ srs_error_t SrsCircleQueue::push(void *buffer, uint64_t size)
             memcpy(data, temp_buffer + info->max_nr - current_pos, 8 - (info->max_nr - current_pos));
             memcpy(data + 8 - (info->max_nr - current_pos), buffer, size);  // copy data
         }
-        
     }
 
     while (!__sync_bool_compare_and_swap(&info->write_pos_r, current_pos, next_pos)) {
@@ -90,9 +89,11 @@ srs_error_t SrsCircleQueue::push(void *buffer, uint64_t size)
     return err;
 }
 
-srs_error_t SrsCircleQueue::pop(void * buffer, uint64_t &size) {   
+srs_error_t SrsCircleQueue::pop(void* buffer, uint64_t& size)
+{
     srs_error_t err = srs_success;
-    if ((!info) || (!data)) {// not initialize
+
+    if (!info || !data) {
         return srs_error_new(ERROR_QUEUE_POP, "queue init failed");
     }
     
@@ -102,6 +103,7 @@ srs_error_t SrsCircleQueue::pop(void * buffer, uint64_t &size) {
         if (current_pos == info->write_pos_r) {
             return srs_error_new(ERROR_QUEUE_POP, "queue is empty");
         }
+
         if (current_pos + 8 < info->max_nr) {
             size = *(uint64_t *)(data + current_pos);  // the size of current block
         } else {
@@ -117,7 +119,7 @@ srs_error_t SrsCircleQueue::pop(void * buffer, uint64_t &size) {
     if (next_pos > current_pos) {
         memcpy(buffer, data + current_pos + 8, size);
     } else {
-        if(current_pos + 8 < info->max_nr) {
+        if (current_pos + 8 < info->max_nr) {
             memcpy(buffer, data + current_pos + 8, info->max_nr - current_pos - 8);
             memcpy(buffer + info->max_nr - current_pos - 8, data, next_pos);
         } else {
